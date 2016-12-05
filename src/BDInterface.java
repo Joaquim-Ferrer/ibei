@@ -141,5 +141,21 @@ public class BDInterface {
 			return null;
 		}
 	}
+
+	public boolean sendMessage(int id, String emissor, String mensagem){
+		String query = "INSERT INTO mensagens (id_leilao, username, mensagem) VALUES (?, ?, ?)";
+		try (PreparedStatement stmt = connection.prepareStatement(query)){
+			stmt.setInt(1, id);
+			stmt.setString(2, emissor);
+			stmt.setString(3, mensagem);
+			stmt.executeUpdate();
+			connection.commit();
+			System.out.println("Auction created successfully");
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
+		return true;
+	}
 }
 
