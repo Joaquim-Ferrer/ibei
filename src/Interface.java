@@ -87,6 +87,10 @@ public class Interface {
 					badInput = false;
 					this.state = "SEARCH_AUCTIONS";
 					break;
+				case 3:
+					badInput = false;
+					this.state = "GET_AUCTION";
+					break;
 				case 0:
 					badInput = false;
 					logOut();
@@ -164,6 +168,7 @@ public class Interface {
 		String id = reader.nextLine();
 		
 		String auction = bd.getAuctionDetails(id);
+		System.out.println(auction);
 		
 	}
 	
