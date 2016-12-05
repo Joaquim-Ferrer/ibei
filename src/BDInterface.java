@@ -150,7 +150,7 @@ public class BDInterface {
 			stmt.setString(3, mensagem);
 			stmt.executeUpdate();
 			connection.commit();
-			System.out.println("Auction created successfully");
+			System.out.println("Message sent successfully");
 		}catch (SQLException e) {
 			System.out.println(e.getMessage());
 			return false;
