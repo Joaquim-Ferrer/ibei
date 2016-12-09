@@ -90,11 +90,28 @@ public class BDInterface {
 		}
 		return 0;
 	}
+	
+	public int createBid(String auction_id, String user, float bid) {
+		String query = "INSERT INTO licitacao"
+				+ " VALUES (?,?,?,SYSDATE)";
+		try(PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setLong(1, Long.parseLong(auction_id));
+			stmt.setString(2, user);
+			stmt.setFloat(3, bid);
+			stmt.executeUpdate();
+			connection.commit();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return -1;
+		}
+		return 0;
+	}
 
 	public ArrayList<String> searchAuctionsByCode(String code) {
-		String query = "SELECT id_leilao, titulo"
-				+ " FROM leilao"
-				+ " WHERE cod_artigo = ?";
+		String query = "SELECT leilao.id_leilao id_leilao, titulo, MIN(montante) montante_min"
+				+ " FROM leilao, licitacao"
+				+ " WHERE cod_artigo = ? AND leilao.id_leilao = licitacao.id_leilao"
+				+ " GROUP BY leilao.id_leilao, titulo";
 
 		ArrayList<String> result = new ArrayList<String>();
 
@@ -104,7 +121,8 @@ public class BDInterface {
 			while (rs.next()) {
 				int id = rs.getInt("id_leilao");
 				String titulo = rs.getString("titulo");
-				result.add("Auction number: " + id + "\t\tTitle: " + titulo);
+				float montante_min = rs.getFloat("montante_min");
+				result.add("Auction number: " + id + "\t\tTitle: " + titulo + "\t\tLowest Bid: " + montante_min);
 				System.out.println("1");
 			}
 			return result;
@@ -116,12 +134,17 @@ public class BDInterface {
 	}
 
 	public String getAuctionDetails(String id) {
-		String query = "SELECT id_leilao, username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline)"
-				+ " FROM leilao"
-				+ " WHERE id_leilao = ?";
+		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline), montante"
+				+ " FROM leilao, licitacao"
+				+ " WHERE leilao.id_leilao = ? AND leilao.id_leilao = licitacao.id_leilao AND "
+				+ " montante = (SELECT"
+				+ " min(montante)"
+				+ " FROM LICITACAO"
+				+ " WHERE licitacao.id_leilao = ?)";
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setLong(1, Long.parseLong(id));
+			stmt.setLong(2, Long.parseLong(id));
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
 				long id_leilao = rs.getLong("id_leilao");
@@ -131,8 +154,11 @@ public class BDInterface {
 				String descricao = rs.getString("descricao");
 				Float preco_maximo = rs.getFloat("preco_maximo");
 				String deadline = rs.getString("TO_CHAR(deadline)");
-
-				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: " + descricao + "\nPRECO_MAXIMO: " + preco_maximo + "\nDEADLINE: " + deadline;
+				float montante = rs.getFloat("montante");
+				
+				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: " 
+					+ descricao + "\nPRECO_MAXIMO: " + preco_maximo + "\nDEADLINE: " + deadline
+					+ "\n\n LAST BID: " + montante;
 
 			}
 			return "";

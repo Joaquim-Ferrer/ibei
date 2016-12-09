@@ -10,12 +10,14 @@ public class Interface {
 	private Scanner reader;
 	private BDInterface bd;
 	private String user; //currently logged in user
+	private String auction; //
 
 	public Interface(BDInterface bd) {
 		state = "INITIAL";
 		reader = new Scanner(System.in);
 		this.bd = bd;
 		user = null;
+		auction = null;
 		state_machine();
 	}
 	
@@ -43,6 +45,8 @@ public class Interface {
 				case "GET_AUCTION":
 					getAuctionMenu();
 					break;
+				case "AUCTION_MENU":
+					auctionMenu();
 				case "EXIT":
 					break;
 				default:
@@ -153,6 +157,7 @@ public class Interface {
 		ArrayList<String> auctions = bd.searchAuctionsByCode(code);
 		if(auctions == null) {
 			errorDB();
+			state = "USER_MENU";
 			return;
 		}
 		
@@ -170,6 +175,32 @@ public class Interface {
 		String auction = bd.getAuctionDetails(id);
 		System.out.println(auction);
 		
+		this.auction = id;
+		state = "AUCTION_MENU";
+	}
+	
+	private void auctionMenu() {
+		System.out.println("1-Make a bid");
+		System.out.println("0-Exit auction");
+		
+		while(true) {
+			int option = Integer.parseInt(reader.nextLine());
+			if(option == 1) {
+				System.out.println("How much do you want to ask for?");
+				float bid = Float.parseFloat(reader.nextLine());
+				bd.createBid(auction, user, bid);
+				break;
+			}
+			else if(option == 0) {
+				auction = null;
+				state = "USER_MENU";
+				break;
+			}
+			else {
+				errorInput();
+			}
+		}
+			
 	}
 	
 	private void initialMenu() {
