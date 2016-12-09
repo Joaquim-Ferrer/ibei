@@ -55,8 +55,8 @@ END custo_licitacao_constraint;
 /
 
 CREATE TABLE mensagens(
-	id_leilao 	NUMBER(6) NOT NULL,
 	username 	VARCHAR2(30) NOT NULL,
+	id_leilao 	NUMBER(6) NOT NULL,
 	mensagem 	VARCHAR2(100) NOT NULL,
 	FOREIGN KEY(username) REFERENCES utilizador(username),
 	FOREIGN KEY(id_leilao) REFERENCES leilao(id_leilao),

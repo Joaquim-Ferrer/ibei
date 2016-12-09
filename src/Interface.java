@@ -47,6 +47,9 @@ public class Interface {
 					break;
 				case "AUCTION_MENU":
 					auctionMenu();
+				case "SEND_MENSAGE":
+					sendMensage();
+					break;
 				case "EXIT":
 					break;
 				default:
@@ -78,6 +81,7 @@ public class Interface {
 		System.out.println("1-Create Auction");
 		System.out.println("2-Search for auctions by its code EAN");
 		System.out.println("3-Access auction by its id");
+		System.out.println("4-Send mensage to auction mural");
 		
 		boolean badInput = true;
 		while(badInput) {
@@ -95,6 +99,10 @@ public class Interface {
 					badInput = false;
 					this.state = "GET_AUCTION";
 					break;
+				case 4:
+					badInput = false;
+					this.state = "SEND_MENSAGE";
+					break;
 				case 0:
 					badInput = false;
 					logOut();
@@ -105,7 +113,16 @@ public class Interface {
 			}
 		}
 	}
-	
+
+	private void sendMensage(){
+		System.out.println("Auction ID: ");
+		int id = Integer.parseInt(reader.nextLine());
+		System.out.println("Write your message:");
+		String message = reader.nextLine();
+
+		bd.sendMessage(id, this.user, message);
+	}
+
 	private void registerAuctionMenu() {
 		System.out.println("Product Code:");
 		String code = reader.nextLine();
