@@ -26,7 +26,7 @@ public class BDInterface {
 	}
 
 	public int createUser(String username, String password) {
-		String query = "INSERT INTO utilizador VALUES (?, ?)";
+		String query = "INSERT INTO utilizador (username, password) VALUES (?, ?)";
 		System.out.println(query);
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -182,6 +182,68 @@ public class BDInterface {
 			return false;
 		}
 		return true;
+	}
+	
+	public void updateUserOnline(String user) {
+		
+		String query = "UPDATE utilizador"
+				+ " SET lastOnline = SYSDATE"
+				+ " WHERE username = ?";
+		
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setString(1, user);
+			stmt.executeUpdate();
+			connection.commit();
+			System.out.println("Said that the user is online");
+		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public String getOnlineUsers() {
+		String query = "SELECT username"
+				+ " FROM utilizador"
+				+ " WHERE lastOnline > sysdate + interval '20' second";
+		String output = "";
+		int count=0;
+		
+		try(PreparedStatement stmt = connection.prepareStatement(query)){
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()){
+				String username = rs.getString("username");
+				output += username + "\n";
+				count++;
+			}
+			output = "There are "+ count + " users online\n" + output;
+			return output;
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return null;
+		}	
+	}
+	
+	public String getUserActivityAuctions(String user) {
+		String query = "SELECT id_leilao"
+				+ " FROM leilao"
+				+ " WHERE username = ?"
+				+ " UNION"
+				+ " SELECT DISTINCT(id_leilao)"
+				+ " FROM licitacao"
+				+ " WHERE username = ?";
+		String output = "";
+		
+		try(PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setString(1, user);
+			stmt.setString(2, user);
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()){
+				output += "Id do leilao: " + rs.getLong("id_leilao") + "\n";
+			}
+			return output;
+		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
 	}
 }
 

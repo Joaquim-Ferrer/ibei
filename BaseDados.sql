@@ -3,7 +3,8 @@ CREATE TABLE utilizador(
 		CONSTRAINT userMinLen CHECK(LENGTH(username) > 5)
 		CONSTRAINT userUnique PRIMARY KEY,
 	password 	VARCHAR2(30) NOT NULL
-		CONSTRAINT passMinLen CHECK(LENGTH(password) > 5)
+		CONSTRAINT passMinLen CHECK(LENGTH(password) > 5),
+	lastOnline DATE DEFAULT SYSDATE NOT NULL
 );
 
 CREATE TABLE leilao(
@@ -50,7 +51,7 @@ BEGIN
 	IF highest_bid < :NEW.montante
 	THEN
 		RAISE_APPLICATION_ERROR(-20000, 'CANT BID HIGHER THAN LOWEST BID');
-	END IF
+	END IF;
 END custo_licitacao_constraint;
 /
 

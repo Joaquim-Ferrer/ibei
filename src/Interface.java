@@ -11,6 +11,8 @@ public class Interface {
 	private BDInterface bd;
 	private String user; //currently logged in user
 	private String auction; //
+	private final int secondsBetweenPings = 20;
+	private OnlineThread onlineThread;
 
 	public Interface(BDInterface bd) {
 		state = "INITIAL";
@@ -50,6 +52,9 @@ public class Interface {
 				case "SEND_MENSAGE":
 					sendMensage();
 					break;
+				case "GET_MY_ACTIVITIES_AUCTIONS":
+					getMyActivitiesAuctions();
+					break;
 				case "EXIT":
 					break;
 				default:
@@ -68,6 +73,8 @@ public class Interface {
 		if(bd.authenticateUser(username, password)) {
 			this.user = username;
 			this.state = "USER_MENU";
+			onlineThread = new OnlineThread(user, bd, secondsBetweenPings);
+			onlineThread.start();
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
 		}
 		else {
@@ -82,6 +89,7 @@ public class Interface {
 		System.out.println("2-Search for auctions by its code EAN");
 		System.out.println("3-Access auction by its id");
 		System.out.println("4-Send mensage to auction mural");
+		System.out.println("5-Get auctions that I have activity in:");
 		
 		boolean badInput = true;
 		while(badInput) {
@@ -102,6 +110,10 @@ public class Interface {
 				case 4:
 					badInput = false;
 					this.state = "SEND_MENSAGE";
+					break;
+				case 5:
+					badInput = false;
+					this.state = "GET_MY_ACTIVITIES_AUCTIONS";
 					break;
 				case 0:
 					badInput = false;
@@ -223,6 +235,7 @@ public class Interface {
 	private void initialMenu() {
 		System.out.println("1-Register:");
 		System.out.println("2-Log In:");
+		System.out.println("3-Check online users");
 		System.out.println("0-Exit");
 		
 		while(true) {
@@ -234,6 +247,10 @@ public class Interface {
 			}
 			else if(option == 2) {
 				state = "LOG_IN";
+				break;
+			}
+			else if(option == 3) {
+				getOnlineUsers();
 				break;
 			}
 			else if(option == 0) {
@@ -260,6 +277,8 @@ public class Interface {
 	
 	private void logOut() {
 		this.user = null;
+		this.auction = null; //Not necessary but to make sure
+		onlineThread.interrupt();
 	}
 	
 	private void errorInput() {
@@ -270,5 +289,16 @@ public class Interface {
 		System.out.println("Database couldn't be reached. Try again later. You'll"
 				+ "get by mail a free 0.01c coupon to use whenever you want for "
 				+ "your trouble. Thank you!");
+	}
+
+	private void getOnlineUsers() {
+		String onlineUsers = bd.getOnlineUsers();
+		System.out.println(onlineUsers);
+	}
+
+	private void getMyActivitiesAuctions() {
+		String myActivitiesAuctions = bd.getUserActivityAuctions(user);
+		System.out.println(myActivitiesAuctions);
+		state = "USER_MENU";
 	}
 }
