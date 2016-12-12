@@ -1,8 +1,11 @@
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.lang.*;
 
-public class BDInterface {
+// implements Runnable
+
+public class BDInterface{
 	private Connection connection = null;
 	private final String USER = "bd";
 	private final String PASS = "bd";
@@ -10,13 +13,15 @@ public class BDInterface {
 	private final String SERVER = "localhost";
 	private final String PORT = "1521";
 
+	//public Interface i = new Interface();
+
 	public BDInterface() throws SQLException {
 		connection = getConnection();
 	}
 
 	public Connection getConnection() throws SQLException {
 		Properties connectionProps = new Properties();
-		connectionProps.put("user", USER);
+		connectionProps.put("user",USER);
 		connectionProps.put("password", PASS);
 
 		Connection conn = DriverManager.getConnection("jdbc:oracle:thin://@" + SERVER + ":" + PORT + "/XE", connectionProps);
@@ -24,6 +29,30 @@ public class BDInterface {
 
 		return conn;
 	}
+
+	/*@Override
+	public void run() {
+		try {
+			while(true){
+				Thread.sleep(3000);
+				if (this.verifyNewMensage(i.getUser()).isEmpty()){
+					System.out.println("nuuuul");
+					System.out.println("ESTADO: " + i.state);
+					System.out.println("UTILIZADOR:" + i.getUser());
+				}
+				else{
+					System.out.println("nao sou null");
+					System.out.println("UTILIZADOR:" + i.getUser());
+
+				}
+			}
+
+
+		} catch (InterruptedException e) {
+				e.printStackTrace();
+				System.out.println(e);
+		}
+	}*/
 
 	public int createUser(String username, String password) {
 		String query = "INSERT INTO utilizador VALUES (?, ?)";
@@ -108,10 +137,10 @@ public class BDInterface {
 	}
 
 	public ArrayList<String> searchAuctionsByCode(String code) {
-		String query = "SELECT leilao.id_leilao id_leilao, titulo, MIN(montante) montante_min"
+		String query = "SELECT leilao.id_leilao id_leilao, titulo, NVL(MIN(montante), leilao.preco_maximo )montante_min"
 				+ " FROM leilao, licitacao"
-				+ " WHERE cod_artigo = ? AND leilao.id_leilao = licitacao.id_leilao"
-				+ " GROUP BY leilao.id_leilao, titulo";
+				+ " WHERE cod_artigo = ? AND leilao.id_leilao = licitacao.id_leilao(+)"
+				+ " GROUP BY leilao.id_leilao, titulo, leilao.preco_maximo";
 
 		ArrayList<String> result = new ArrayList<String>();
 
@@ -134,13 +163,11 @@ public class BDInterface {
 	}
 
 	public String getAuctionDetails(String id) {
-		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline), montante"
-				+ " FROM leilao, licitacao"
-				+ " WHERE leilao.id_leilao = ? AND leilao.id_leilao = licitacao.id_leilao AND "
-				+ " montante = (SELECT"
-				+ " min(montante)"
-				+ " FROM LICITACAO"
-				+ " WHERE licitacao.id_leilao = ?)";
+		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline), NVL(MIN(montante), leilao.preco_maximo) preco_maximo " +
+				"FROM leilao, licitacao " +
+				"WHERE leilao.id_leilao = ? AND leilao.id_leilao = licitacao.id_leilao(+) " +
+				"GROUP BY leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, deadline, preco_maximo";
+
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setLong(1, Long.parseLong(id));
@@ -155,7 +182,7 @@ public class BDInterface {
 				Float preco_maximo = rs.getFloat("preco_maximo");
 				String deadline = rs.getString("TO_CHAR(deadline)");
 				float montante = rs.getFloat("montante");
-				
+				//ArrayList<String> mensagem = mensagesAuction(id_leilao);
 				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: " 
 					+ descricao + "\nPRECO_MAXIMO: " + preco_maximo + "\nDEADLINE: " + deadline
 					+ "\n\n LAST BID: " + montante;
@@ -168,20 +195,91 @@ public class BDInterface {
 		}
 	}
 
-	public boolean sendMessage(int id, String emissor, String mensagem){
-		String query = "INSERT INTO mensagens (id_leilao, username, mensagem) VALUES (?, ?, ?)";
-		try (PreparedStatement stmt = connection.prepareStatement(query)){
-			stmt.setInt(1, id);
-			stmt.setString(2, emissor);
-			stmt.setString(3, mensagem);
-			stmt.executeUpdate();
-			connection.commit();
-			System.out.println("Message sent successfully");
-		}catch (SQLException e) {
+	public boolean sendMessage(int id, String emissor, String mensagem, String estado){
+        String query = "INSERT INTO mensagens (id_leilao, username, mensagem, estado) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(query)){
+            stmt.setInt(1, id);
+            stmt.setString(2, emissor);
+            stmt.setString(3, mensagem);
+            stmt.setString(4, estado);
+            stmt.executeUpdate();
+            connection.commit();
+            System.out.println("Message sent successfully");
+        }catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+
+	public ArrayList<String> mensagesAuction(int id){
+		int n_mensage = 1;
+
+		ArrayList<String> result = new ArrayList<String>();
+
+		String query = "SELECT mensagem FROM mensagens WHERE id_leilao=?";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setLong(1, id);
+			ResultSet rs = stmt.executeQuery();
+			while (rs.next()) {
+				String mensagem = rs.getString("mensagem");
+				result.add("[" + n_mensage + "] - " + mensagem);
+				n_mensage++;
+			}
+			return result;
+		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-			return false;
+			return null;
 		}
-		return true;
+
 	}
+
+
+    public ArrayList<String> verifyNewMensage(String username){
+
+        ArrayList<String> result = new ArrayList<String>();
+
+        String query = "SELECT leilao.id_leilao, leilao.username, mensagens.mensagem "
+                + " FROM leilao, mensagens"
+                + " WHERE leilao.id_leilao = mensagens.id_leilao AND mensagens.estado = 'nao visto' AND leilao.username = ?";
+
+        //result.add("YOUR MENSAGES:\n");
+
+        try (PreparedStatement stmt = connection.prepareStatement(query)){
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            while(rs.next()){
+                int id_leilao = rs.getInt("id_leilao");
+                String mensagem = rs.getString("mensagem");
+
+                result.add("The auction number " + id_leilao + " has the mensage:\n" + mensagem +"\n");
+
+                /*String query_aux = "UPDATE mensagens"
+                        + "SET estado = 'visto'"
+                        + "WHERE id_leilao = (SELECT leilao.id_leilao " +
+                        "FROM leilao, mensagens " +
+                        "WHERE leilao.id_leilao = mensagens.id_leilao AND mensagens.estado = 'nao visto' AND leilao.username = ?)";
+
+
+                try (PreparedStatement st = connection.prepareStatement(query_aux)){
+                    stmt.setString(1, "estado");
+                    stmt.executeUpdate();
+                    connection.commit();
+                    System.out.println("Message sent successfully");
+                }catch (SQLException e) {
+                    System.out.println(e.getMessage());
+
+                }*/
+
+            }
+
+            return result;
+        }catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
 }
 

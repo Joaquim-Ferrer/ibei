@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Date;
 
-public class Interface {
+public class Interface  {
 	
 	private String state;
 	private Scanner reader;
@@ -20,7 +20,21 @@ public class Interface {
 		auction = null;
 		state_machine();
 	}
-	
+
+	/*public Interface(){
+		state = "INITIAL";
+		user = null;
+		auction = null;
+	}*/
+
+	public String getUser() {
+		return user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
 	public void state_machine() {
 		while(state != "EXIT") {
 			switch(state){
@@ -47,8 +61,12 @@ public class Interface {
 					break;
 				case "AUCTION_MENU":
 					auctionMenu();
+					break;
 				case "SEND_MENSAGE":
 					sendMensage();
+					break;
+				case "AUCTION_MENSAGES":
+					seeMensage();
 					break;
 				case "EXIT":
 					break;
@@ -58,7 +76,8 @@ public class Interface {
 			}
 		}
 	}
-	
+
+
 	private void logInMenu() {
 		System.out.println("Username:");
 		String username = reader.nextLine();
@@ -66,15 +85,17 @@ public class Interface {
 		String password = reader.nextLine();
 		
 		if(bd.authenticateUser(username, password)) {
-			this.user = username;
+			setUser(username);
 			this.state = "USER_MENU";
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
+			System.out.println("\n\n" + bd.verifyNewMensage(user) + "\n");
 		}
 		else {
 			System.out.println("I'm sorry but that account doesn't exist");
 			this.state = "INITIAL";
 		}
 	}
+
 	
 	private void userMenu() {
 		System.out.println("0-Log out");
@@ -82,6 +103,7 @@ public class Interface {
 		System.out.println("2-Search for auctions by its code EAN");
 		System.out.println("3-Access auction by its id");
 		System.out.println("4-Send mensage to auction mural");
+		System.out.println("5-See auction messages");
 		
 		boolean badInput = true;
 		while(badInput) {
@@ -103,6 +125,10 @@ public class Interface {
 					badInput = false;
 					this.state = "SEND_MENSAGE";
 					break;
+				case 5:
+					badInput = false;
+					this.state = "AUCTION_MENSAGES";
+					break;
 				case 0:
 					badInput = false;
 					logOut();
@@ -114,13 +140,37 @@ public class Interface {
 		}
 	}
 
+	private void seeMensage(){
+		System.out.println("Auction ID:");
+		int id = Integer.parseInt(reader.nextLine());
+
+		ArrayList<String> mensages = bd.mensagesAuction(id);
+
+		if (mensages == null){
+			errorDB();
+			state = "USER_MENU";
+			return;
+		}
+
+		for (String mensage: mensages){
+			System.out.println(mensage);
+		}
+
+		state = "USER_MENU";
+		return;
+
+	}
+
 	private void sendMensage(){
+		String estado = "nao visto";
 		System.out.println("Auction ID: ");
 		int id = Integer.parseInt(reader.nextLine());
 		System.out.println("Write your message:");
 		String message = reader.nextLine();
 
-		bd.sendMessage(id, this.user, message);
+		bd.sendMessage(id, this.user, message, estado);
+
+		state = "USER_MENU";
 	}
 
 	private void registerAuctionMenu() {
