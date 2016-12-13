@@ -8,8 +8,6 @@ public class Client {
 		try {
 
 			BDInterface bd = new BDInterface();
-            //Thread thread = new Thread(bd);
-            //thread.start();
 			Interface i = new Interface(bd);
 
 

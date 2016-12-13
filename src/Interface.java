@@ -11,6 +11,9 @@ public class Interface  {
 	private BDInterface bd;
 	private String user; //currently logged in user
 	private String auction; //
+	private final int secondsBetweenPings = 20;
+	private OnlineThread onlineThread;
+	private MessageThread messageThread;
 
 	public Interface(BDInterface bd) {
 		state = "INITIAL";
@@ -19,20 +22,6 @@ public class Interface  {
 		user = null;
 		auction = null;
 		state_machine();
-	}
-
-	/*public Interface(){
-		state = "INITIAL";
-		user = null;
-		auction = null;
-	}*/
-
-	public String getUser() {
-		return user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
 	}
 
 	public void state_machine() {
@@ -61,12 +50,11 @@ public class Interface  {
 					break;
 				case "AUCTION_MENU":
 					auctionMenu();
-					break;
 				case "SEND_MENSAGE":
 					sendMensage();
 					break;
-				case "AUCTION_MENSAGES":
-					seeMensage();
+				case "GET_MY_ACTIVITIES_AUCTIONS":
+					getMyActivitiesAuctions();
 					break;
 				case "EXIT":
 					break;
@@ -77,7 +65,6 @@ public class Interface  {
 		}
 	}
 
-
 	private void logInMenu() {
 		System.out.println("Username:");
 		String username = reader.nextLine();
@@ -85,10 +72,13 @@ public class Interface  {
 		String password = reader.nextLine();
 		
 		if(bd.authenticateUser(username, password)) {
-			setUser(username);
+			this.user = username;
 			this.state = "USER_MENU";
+			onlineThread = new OnlineThread(user, bd, secondsBetweenPings);
+			onlineThread.start();
+			messageThread = new MessageThread(bd, secondsBetweenPings);
+			messageThread.start();
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
-			System.out.println("\n\n" + bd.verifyNewMensage(user) + "\n");
 		}
 		else {
 			System.out.println("I'm sorry but that account doesn't exist");
@@ -168,8 +158,10 @@ public class Interface  {
 		System.out.println("Write your message:");
 		String message = reader.nextLine();
 
-		bd.sendMessage(id, this.user, message, estado);
-
+		//insert message on mensagens table
+		bd.sendMessage(id, this.user, message);
+		//insert message on notificacoes table
+		bd.createNotification(id, this.user, estado);
 		state = "USER_MENU";
 	}
 
@@ -269,21 +261,26 @@ public class Interface  {
 		}
 			
 	}
-	
+
 	private void initialMenu() {
 		System.out.println("1-Register:");
 		System.out.println("2-Log In:");
+		System.out.println("3-Check online users");
 		System.out.println("0-Exit");
-		
+
 		while(true) {
 			int option = Integer.parseInt(reader.nextLine());
-			
+
 			if(option == 1) {
 				state = "REGISTER";
 				break;
 			}
 			else if(option == 2) {
 				state = "LOG_IN";
+				break;
+			}
+			else if(option == 3) {
+				getOnlineUsers();
 				break;
 			}
 			else if(option == 0) {
@@ -293,7 +290,7 @@ public class Interface  {
 			else {
 				errorInput();
 			}
-				
+
 		}
 	}
 	
@@ -310,6 +307,9 @@ public class Interface  {
 	
 	private void logOut() {
 		this.user = null;
+		this.auction = null;
+		onlineThread.interrupt();
+		messageThread.interrupt();
 	}
 	
 	private void errorInput() {
@@ -320,5 +320,16 @@ public class Interface  {
 		System.out.println("Database couldn't be reached. Try again later. You'll"
 				+ "get by mail a free 0.01c coupon to use whenever you want for "
 				+ "your trouble. Thank you!");
+	}
+
+	private void getOnlineUsers() {
+		String onlineUsers = bd.getOnlineUsers();
+		System.out.println(onlineUsers);
+	}
+
+	private void getMyActivitiesAuctions() {
+		String myActivitiesAuctions = bd.getUserActivityAuctions(user);
+		System.out.println(myActivitiesAuctions);
+		state = "USER_MENU";
 	}
 }

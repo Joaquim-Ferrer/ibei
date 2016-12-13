@@ -1,9 +1,9 @@
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Properties;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.lang.*;
-
-// implements Runnable
 
 public class BDInterface{
 	private Connection connection = null;
@@ -12,8 +12,6 @@ public class BDInterface{
 
 	private final String SERVER = "localhost";
 	private final String PORT = "1521";
-
-	//public Interface i = new Interface();
 
 	public BDInterface() throws SQLException {
 		connection = getConnection();
@@ -29,30 +27,6 @@ public class BDInterface{
 
 		return conn;
 	}
-
-	/*@Override
-	public void run() {
-		try {
-			while(true){
-				Thread.sleep(3000);
-				if (this.verifyNewMensage(i.getUser()).isEmpty()){
-					System.out.println("nuuuul");
-					System.out.println("ESTADO: " + i.state);
-					System.out.println("UTILIZADOR:" + i.getUser());
-				}
-				else{
-					System.out.println("nao sou null");
-					System.out.println("UTILIZADOR:" + i.getUser());
-
-				}
-			}
-
-
-		} catch (InterruptedException e) {
-				e.printStackTrace();
-				System.out.println(e);
-		}
-	}*/
 
 	public int createUser(String username, String password) {
 		String query = "INSERT INTO utilizador VALUES (?, ?)";
@@ -195,13 +169,12 @@ public class BDInterface{
 		}
 	}
 
-	public boolean sendMessage(int id, String emissor, String mensagem, String estado){
-        String query = "INSERT INTO mensagens (id_leilao, username, mensagem, estado) VALUES (?, ?, ?, ?)";
+	public boolean sendMessage(int id, String emissor, String mensagem){
+        String query = "INSERT INTO mensagens (id_leilao, username, mensagem) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)){
             stmt.setInt(1, id);
             stmt.setString(2, emissor);
             stmt.setString(3, mensagem);
-            stmt.setString(4, estado);
             stmt.executeUpdate();
             connection.commit();
             System.out.println("Message sent successfully");
@@ -212,6 +185,67 @@ public class BDInterface{
         return true;
     }
 
+	public void updateUserOnline(String user) {
+
+		String query = "UPDATE utilizador"
+				+ " SET lastOnline = SYSDATE"
+				+ " WHERE username = ?";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setString(1, user);
+			stmt.executeUpdate();
+			connection.commit();
+			System.out.println("Said that the user is online");
+		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public String getOnlineUsers() {
+		String query = "SELECT username"
+				+ " FROM utilizador"
+				+ " WHERE lastOnline > sysdate + interval '20' second";
+		String output = "";
+		int count=0;
+
+		try(PreparedStatement stmt = connection.prepareStatement(query)){
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()){
+				String username = rs.getString("username");
+				output += username + "\n";
+				count++;
+			}
+			output = "There are "+ count + " users online\n" + output;
+			return output;
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
+	}
+
+	public String getUserActivityAuctions(String user) {
+		String query = "SELECT id_leilao"
+				+ " FROM leilao"
+				+ " WHERE username = ?"
+				+ " UNION"
+				+ " SELECT DISTINCT(id_leilao)"
+				+ " FROM licitacao"
+				+ " WHERE username = ?";
+		String output = "";
+
+		try(PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setString(1, user);
+			stmt.setString(2, user);
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()){
+				output += "Id do leilao: " + rs.getLong("id_leilao") + "\n";
+			}
+			return output;
+		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
+	}
 
 	public ArrayList<String> mensagesAuction(int id){
 		int n_mensage = 1;
@@ -236,50 +270,91 @@ public class BDInterface{
 
 	}
 
+	//FALTA COLOCAR A DATA -> PROBLEMAS NA INSERCAO
+	public boolean createNotification(int id, String username, String estado){
+		String query = "INSERT INTO notificacao (id_notif, id_leilao, username, estado) " +
+				"VALUES (ID_NOTIF.nextval, ?, ?, ?)";
 
-    public ArrayList<String> verifyNewMensage(String username){
+		//java.util.Date data_java = new java.util.Date();
+		//java.sql.Date data_sql = new java.sql.Date(data_java.getTime());
 
-        ArrayList<String> result = new ArrayList<String>();
+		try (PreparedStatement stmt = connection.prepareStatement(query)){
+			stmt.setInt(1, id);
+			stmt.setString(2, username);
+			stmt.setString(3, estado);
+			stmt.executeUpdate();
+			connection.commit();
+			System.out.println("Notification created successfully");
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
+		return true;
+	}
 
-        String query = "SELECT leilao.id_leilao, leilao.username, mensagens.mensagem "
-                + " FROM leilao, mensagens"
-                + " WHERE leilao.id_leilao = mensagens.id_leilao AND mensagens.estado = 'nao visto' AND leilao.username = ?";
+	public ArrayList<String> getOnlineUsers_aux() {
+		String query = "SELECT username"
+				+ " FROM utilizador"
+				+ " WHERE lastOnline > sysdate + interval '20' second";
 
-        //result.add("YOUR MENSAGES:\n");
+		ArrayList<String> result = new ArrayList<String>();
 
-        try (PreparedStatement stmt = connection.prepareStatement(query)){
-            stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            while(rs.next()){
-                int id_leilao = rs.getInt("id_leilao");
-                String mensagem = rs.getString("mensagem");
+		try(PreparedStatement stmt = connection.prepareStatement(query)){
+			ResultSet rs = stmt.executeQuery();
+			while(rs.next()) {
+				String username = rs.getString("username");
+				result.add(username);
+			}
+			return result;
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
+	}
 
-                result.add("The auction number " + id_leilao + " has the mensage:\n" + mensagem +"\n");
+	public ArrayList<String> verifyNewMensage(){
 
-                /*String query_aux = "UPDATE mensagens"
-                        + "SET estado = 'visto'"
-                        + "WHERE id_leilao = (SELECT leilao.id_leilao " +
-                        "FROM leilao, mensagens " +
-                        "WHERE leilao.id_leilao = mensagens.id_leilao AND mensagens.estado = 'nao visto' AND leilao.username = ?)";
+		//System.out.println("ENTREI N VERIFY MENSAGE");
+		ArrayList<String> result = new ArrayList<String>();
+		ArrayList<String> userOn = getOnlineUsers_aux();
 
+		for (String user : userOn){
+			System.out.println("ENTREI N VERIFY MENSAGE");
+			String query = "SELECT notificacao.id_leilao, notificacao.username, mensagens.mensagem " +
+					"FROM notificacao, mensagens, utilizador " +
+					"WHERE notificacao.id_leilao = mensagens.id_leilao AND " +
+					"notificacao.username = mensagens.username AND " +
+					"utilizador.username = ? AND " +
+					"notificacao.estado = 'nao visto'" +
+					"GROUP BY notificacao.id_leilao, notificacao.username, mensagens.mensagem";
 
-                try (PreparedStatement st = connection.prepareStatement(query_aux)){
-                    stmt.setString(1, "estado");
-                    stmt.executeUpdate();
-                    connection.commit();
-                    System.out.println("Message sent successfully");
-                }catch (SQLException e) {
-                    System.out.println(e.getMessage());
+			try (PreparedStatement stmt = connection.prepareStatement(query)){
+				stmt.setString(1, user);
+				ResultSet rs = stmt.executeQuery();
+				while(rs.next()){
+					int id_leilao = rs.getInt("id_leilao");
+					String mensagem = rs.getString("mensagem");
+					result.add("Auction id number " + id_leilao + " has received a new mensage:\n" + mensagem + "\n\n");
+				}
+				return result;
+			}catch (SQLException e) {
+				System.out.println(e.getMessage());
+			}
 
-                }*/
+			String query_aux = "UPDATE notificacao " +
+								"SET estado = 'visto' " +
+								"WHERE username = ?";
 
-            }
+			try (PreparedStatement stmt = connection.prepareStatement(query_aux)) {
+				stmt.setString(1, user);
+				stmt.executeUpdate();
+				connection.commit();
+			} catch(SQLException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+		return null;
+	}
 
-            return result;
-        }catch (SQLException e) {
-            System.out.println(e.getMessage());
-            return null;
-        }
-    }
 }
 

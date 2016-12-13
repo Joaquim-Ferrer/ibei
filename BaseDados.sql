@@ -63,13 +63,30 @@ CREATE TABLE mensagens(
 	CONSTRAINT pk_idLeilao PRIMARY KEY (id_leilao)
 );
 
-CREATE TABLE notificacoes(
+create sequence notif_id start with 1 increment by 1 minvalue 1 maxvalue 100000;
+
+CREATE TABLE notificacao(
+	id_notif	NUMBER(6) NOT NULL,
 	id_leilao 	NUMBER(6) NOT NULL,
 	username 	VARCHAR2(30) NOT NULL,
 	data 		DATE NOT NULL,
-	cod_artigo 	NUMBER(13) NOT NULL,
-	FOREIGN KEY (cod_artigo) REFERENCES leilao(cod_artigo),
+	estado		VARCHAR2(30) NOT NULL,
 	FOREIGN KEY(username) REFERENCES utilizador(username),
 	FOREIGN KEY(id_leilao) REFERENCES leilao(id_leilao),
-	CONSTRAINT pk_idLeilao PRIMARY KEY (id_leilao)
+	CONSTRAINT pk_idNotif PRIMARY KEY (id_notif)
 );
+
+CREATE TABLE notif_leilao(
+	id_notif	NUMBER(6) NOT NULL,
+	valor		NUMBER(6,2) NOT NULL,
+	FOREIGN KEY(id_notif) REFERENCES notificacao(id_notif)
+);
+
+CREATE TABLE notif_msg(
+	remetente	VARCHAR2(30) NOT NULL,
+	id_notif	NUMBER(6) NOT NULL,
+	texto	VARCHAR2(30) NOT NULL,
+	FOREIGN KEY(id_notif) REFERENCES notificacao(id_notif),
+	FOREIGN KEY(remetente) REFERENCES utilizador(username)
+);
+
