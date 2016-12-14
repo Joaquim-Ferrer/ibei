@@ -76,7 +76,7 @@ public class Interface  {
 			this.state = "USER_MENU";
 			onlineThread = new OnlineThread(user, bd, secondsBetweenPings);
 			onlineThread.start();
-			messageThread = new MessageThread(bd, secondsBetweenPings);
+			messageThread = new MessageThread(user, bd, secondsBetweenPings);
 			messageThread.start();
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
 		}
@@ -162,6 +162,8 @@ public class Interface  {
 		bd.sendMessage(id, this.user, message);
 		//insert message on notificacoes table
 		bd.createNotification(id, this.user, estado);
+		//insert message on notif_msg table
+		//bd.createNotifMessage(this.user, message);
 		state = "USER_MENU";
 	}
 
