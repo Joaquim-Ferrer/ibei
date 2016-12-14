@@ -21,6 +21,15 @@ CREATE TABLE leilao(
 	FOREIGN KEY(username) REFERENCES utilizador(username)
 )
 
+CREATE TABLE historial_leilao(
+	id_leilao	NUMBER(10,2) NOT NULL,
+	data	DATE NOT NULL,
+	titulo	VARCHAR(30) NOT NULL,
+	descricao VARCHAR(100) NOT NULL,
+	FOREIGN KEY(id_leilao) REFERENCES leilao(id_leilao),
+	CONSTRAINT pk_histleilao PRIMARY KEY(id_leilao, data)
+)
+
 CREATE SEQUENCE LEILAO_ID
 START WITH 1
 INCREMENT BY 1
