@@ -245,5 +245,17 @@ public class BDInterface {
 			return null;
 		}
 	}
+
+	public void updateAuctionTitle(String user, String new_title) {
+		String query = "DECLARE leilao_username VARCHAR(30)"
+				+ " BEGIN"
+				+ " SELECT username INTO leilao_username"
+				+ " FROM leilao"
+				+ " WHERE id_leilao = 15;"
+				+ " IF leilao_username = '?'"
+				+ " THEN"
+				+ " UPDATE leilao"
+				+ " SET titulo 
+	}
 }
 

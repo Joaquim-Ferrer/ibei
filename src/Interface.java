@@ -301,4 +301,29 @@ public class Interface {
 		System.out.println(myActivitiesAuctions);
 		state = "USER_MENU";
 	}
+	
+	private void editAuction() {
+		
+		System.out.println("Remember you can only edit auctions you have created\n"
+				+ "Auction id: ");
+		String id = reader.nextLine();
+		System.out.println("New Title:<leave empty if you want to keep the same>");
+		String new_title = reader.nextLine();
+		System.out.println("New description:<leave empy if you want to keep the same>");
+		String new_description = reader.nextLine();
+		
+		if(new_title != "") {
+			bd.updateAuctionTitle(user, new_title);
+		}
+		if(new_description != "") {
+			bd.updateAuctionDescription(user, new_description);
+		}
+		
+		String auction = bd.getAuctionDetails(id);
+		System.out.println(auction);
+		
+		this.auction = id;
+		state = "USER_MENU";
+		
+	}
 }
