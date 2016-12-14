@@ -27,7 +27,6 @@ public class BDInterface {
 
 	public int createUser(String username, String password) {
 		String query = "INSERT INTO utilizador (username, password) VALUES (?, ?)";
-		System.out.println(query);
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, username);
@@ -246,16 +245,70 @@ public class BDInterface {
 		}
 	}
 
-	public void updateAuctionTitle(String user, String new_title) {
-		String query = "DECLARE leilao_username VARCHAR(30)"
+	public boolean updateAuctionTitle(String user, String new_title, String id_leilao, boolean commit) {
+		
+		String query = "DECLARE leilao_username VARCHAR(30);"
 				+ " BEGIN"
 				+ " SELECT username INTO leilao_username"
 				+ " FROM leilao"
-				+ " WHERE id_leilao = 15;"
-				+ " IF leilao_username = '?'"
+				+ " WHERE id_leilao = ?;"
+				+ " IF leilao_username = ?"
 				+ " THEN"
 				+ " UPDATE leilao"
-				+ " SET titulo 
+				+ " SET titulo = ?"
+				+ " WHERE id_leilao = ?;"
+				+ " ELSE RAISE_APPLICATION_ERROR(-20000, 'YOU HAVE NO POWER THERE');"
+				+ " END IF;"
+				+ " END;";
+		
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setLong(1, Long.parseLong(id_leilao));
+			stmt.setString(2, user);
+			stmt.setString(3, new_title);
+			stmt.setLong(4, Long.parseLong(id_leilao));
+			stmt.execute();
+			if(commit) {
+				connection.commit();
+			}
+			return true;
+		}
+		catch(SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
+	}
+	
+	public boolean updateAuctionDescription(String user, String new_description, String id_leilao, boolean commit) {
+		
+		String query = "DECLARE leilao_username VARCHAR(30);"
+				+ " BEGIN"
+				+ " SELECT username INTO leilao_username"
+				+ " FROM leilao"
+				+ " WHERE id_leilao = ?;"
+				+ " IF leilao_username = ?"
+				+ " THEN"
+				+ " UPDATE leilao"
+				+ " SET descricao = ?"
+				+ " WHERE id_leilao = ?;"
+				+ " ELSE RAISE_APPLICATION_ERROR(-20000, 'YOU HAVE NO POWER THERE');"
+				+ " END IF;"
+				+ " END;";
+		
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setLong(1, Long.parseLong(id_leilao));
+			stmt.setString(2, user);
+			stmt.setString(3, new_description);
+			stmt.setLong(4, Long.parseLong(id_leilao));
+			stmt.execute();
+			if(commit) {
+				connection.commit();
+			}
+			return true;
+		}
+		catch(SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
 	}
 }
 

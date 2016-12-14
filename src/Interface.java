@@ -210,6 +210,7 @@ public class Interface {
 	
 	private void auctionMenu() {
 		System.out.println("1-Make a bid");
+		System.out.println("2-Update auction");
 		System.out.println("0-Exit auction");
 		
 		while(true) {
@@ -220,6 +221,10 @@ public class Interface {
 				bd.createBid(auction, user, bid);
 				break;
 			}
+			if(option == 2) {
+				editAuction();
+				break;
+			}
 			else if(option == 0) {
 				auction = null;
 				state = "USER_MENU";
@@ -228,8 +233,7 @@ public class Interface {
 			else {
 				errorInput();
 			}
-		}
-			
+		}		
 	}
 	
 	private void initialMenu() {
@@ -304,26 +308,21 @@ public class Interface {
 	
 	private void editAuction() {
 		
-		System.out.println("Remember you can only edit auctions you have created\n"
-				+ "Auction id: ");
-		String id = reader.nextLine();
 		System.out.println("New Title:<leave empty if you want to keep the same>");
 		String new_title = reader.nextLine();
 		System.out.println("New description:<leave empy if you want to keep the same>");
 		String new_description = reader.nextLine();
 		
+		boolean success1 = true;
 		if(new_title != "") {
-			bd.updateAuctionTitle(user, new_title);
+			success1 = bd.updateAuctionTitle(user, new_title, this.auction, false);
 		}
-		if(new_description != "") {
-			bd.updateAuctionDescription(user, new_description);
+		if(success1 && new_description != "") {
+			bd.updateAuctionDescription(user, new_description, this.auction, true);
 		}
 		
-		String auction = bd.getAuctionDetails(id);
+		String auction = bd.getAuctionDetails(this.auction);
 		System.out.println(auction);
-		
-		this.auction = id;
-		state = "USER_MENU";
 		
 	}
 }
