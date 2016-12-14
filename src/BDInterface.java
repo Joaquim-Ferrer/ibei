@@ -93,12 +93,12 @@ public class BDInterface{
 		}
 		return 0;
 	}
-	
-	public int createBid(String auction_id, String user, float bid) {
+
+	public int createBid(int auction_id, String user, float bid) {
 		String query = "INSERT INTO licitacao"
 				+ " VALUES (?,?,?,SYSDATE)";
 		try(PreparedStatement stmt = connection.prepareStatement(query)) {
-			stmt.setLong(1, Long.parseLong(auction_id));
+			stmt.setLong(1, auction_id);
 			stmt.setString(2, user);
 			stmt.setFloat(3, bid);
 			stmt.executeUpdate();
@@ -136,7 +136,7 @@ public class BDInterface{
 
 	}
 
-	public String getAuctionDetails(String id) {
+	public String getAuctionDetails(int id) {
 		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline), NVL(MIN(montante), leilao.preco_maximo) preco_maximo " +
 				"FROM leilao, licitacao " +
 				"WHERE leilao.id_leilao = ? AND leilao.id_leilao = licitacao.id_leilao(+) " +
@@ -144,20 +144,20 @@ public class BDInterface{
 
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
-			stmt.setLong(1, Long.parseLong(id));
-			stmt.setLong(2, Long.parseLong(id));
+			stmt.setInt(1, id);
+			//stmt.setLong(2, id);
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
-				long id_leilao = rs.getLong("id_leilao");
+				int id_leilao = rs.getInt("id_leilao");
 				String username = rs.getString("username");
 				String cod_artigo = rs.getString("cod_artigo");
 				String titulo = rs.getString("titulo");
 				String descricao = rs.getString("descricao");
 				Float preco_maximo = rs.getFloat("preco_maximo");
-				String deadline = rs.getString("TO_CHAR(deadline)");
+				String deadline = rs.getString("deadline");
 				float montante = rs.getFloat("montante");
 				//ArrayList<String> mensagem = mensagesAuction(id_leilao);
-				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: " 
+				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: "
 					+ descricao + "\nPRECO_MAXIMO: " + preco_maximo + "\nDEADLINE: " + deadline
 					+ "\n\n LAST BID: " + montante;
 
@@ -270,13 +270,10 @@ public class BDInterface{
 
 	}
 
-	//FALTA COLOCAR A DATA -> PROBLEMAS NA INSERCAO
 	public boolean createNotification(int id, String username, String estado){
-		String query = "INSERT INTO notificacoes (id_notif, id_leilao, username, estado) " +
-				"VALUES (ID_NOTIF.nextval, ?, ?, ?)";
+		String query = "INSERT INTO notificacoes (id_notif, id_leilao, username, estado, data) " +
+				"VALUES (ID_NOTIF.nextval, ?, ?, ?, SYSDATE)";
 
-		//java.util.Date data_java = new java.util.Date();
-		//java.sql.Date data_sql = new java.sql.Date(data_java.getTime());
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)){
 			stmt.setInt(1, id);
@@ -292,8 +289,8 @@ public class BDInterface{
 		return true;
 	}
 
-	/*public boolean createNotifMessage(String user, String texto){
-		String query = "INSERT INTO notif_msg (username, id_notif, texto) VALUES (?, ID_NOTIF.nextval, ?)";
+	public boolean createNotifMessage(String user, String texto){
+		String query = "INSERT INTO notif_msg (username, id_notif, texto) VALUES (?, ID_NOTIF.currval, ?)";
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)){
 			stmt.setString(1, user);
@@ -306,30 +303,82 @@ public class BDInterface{
 			return false;
 		}
 		return true;
-	}*/
+	}
+
+	public boolean createNotifAuction(String user, float valor){
+		String query = "INSERT INTO notif_leilao (username, id_notif, valor) VALUES (?, ID_NOTIF.currval, ?)";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)){
+			stmt.setString(1, user);
+			stmt.setFloat(2, valor);
+			stmt.executeUpdate();
+			connection.commit();
+			System.out.println("Auction notification created successfully");
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
+		return true;
+
+	}
 
 	public ArrayList<String> verifyNewMensage(String user){
 
-		String query = "SELECT notificacoes.id_leilao, mensagens.mensagem " +
-				"FROM notificacoes, mensagens, leilao " +
-				"WHERE mensagens.id_leilao = leilao.id_leilao AND " +
-				"(leilao.username = ? OR mensagens.username = ?) AND " +
-				"notificacoes.estado = 'nao visto'" +
-				"AND notificacoes.id_leilao = leilao.id_leilao " +
-				"GROUP BY notificacoes.id_leilao, mensagens.mensagem";
+		/*String query = "SELECT notificacoes.id_leilao, notif_msg.texto " +
+				"FROM notificacoes, notif_msg, utilizador " +
+				"WHERE notificacoes.id_notif = notif_msg.id_notif " +
+				"AND utilizador.username = ? " +
+				"AND notificacoes.estado = 'nao visto'";*/
+
+		String query = "SELECT notificacoes.id_leilao, notif_msg.texto " +
+				"FROM notificacoes, notif_msg, utilizador, mensagens, leilao " +
+				"WHERE utilizador.username = ? " +
+				"AND notificacoes.estado = 'nao visto' " +
+				"AND notificacoes.id_notif = notif_msg.id_notif " +
+				"GROUP BY notificacoes.id_leilao, notif_msg.texto ";
+				//"HAVING COUNT(?) > 1";
 
 		ArrayList<String> result = new ArrayList<String>();
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)){
 			stmt.setString(1, user);
-			stmt.setString(2, user);
+			//stmt.setString(2, user);
+			//stmt.setString(3, user);
+			//stmt.setString(4, user);
 			ResultSet rs = stmt.executeQuery();
 
 			while(rs.next()){
 
 				int id_leilao = rs.getInt("id_leilao");
-				String mensagem = rs.getString("mensagem");
-				result.add("Auction id number " + id_leilao + " has received a new mensage:\n" + mensagem + "\n\n");
+				String texto = rs.getString("texto");
+				result.add("Auction id number " + id_leilao + " has received a new mensage:\n" + texto + "\n\n");
+
+			}
+			return result;
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		return null;
+	}
+
+	public ArrayList<String> verifyNewBid(String user){
+		String query = "SELECT notif_leilao.valor, notificacoes.id_leilao " +
+				"FROM notif_leilao, notificacoes, utilizador " +
+				"WHERE notificacoes.id_notif = notif_leilao.id_notif " +
+				"AND utilizador.username = ? " +
+				"AND notificacoes.estado = 'nao visto'";
+
+		ArrayList<String> result = new ArrayList<String>();
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)){
+			stmt.setString(1, user);
+			ResultSet rs = stmt.executeQuery();
+
+			while(rs.next()){
+
+				float valor = rs.getFloat("valor");
+				int id_leilao = rs.getInt("id_leilao");
+				result.add("Auction id number " + id_leilao + " has received a new bid with value: " + valor + "\n");
 
 			}
 			return result;

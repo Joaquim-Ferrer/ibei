@@ -10,7 +10,7 @@ public class Interface  {
 	private Scanner reader;
 	private BDInterface bd;
 	private String user; //currently logged in user
-	private String auction; //
+	private int auction; //
 	private final int secondsBetweenPings = 20;
 	private OnlineThread onlineThread;
 	private MessageThread messageThread;
@@ -20,7 +20,7 @@ public class Interface  {
 		reader = new Scanner(System.in);
 		this.bd = bd;
 		user = null;
-		auction = null;
+		auction = 0;
 		state_machine();
 	}
 
@@ -50,6 +50,7 @@ public class Interface  {
 					break;
 				case "AUCTION_MENU":
 					auctionMenu();
+					break;
 				case "SEND_MENSAGE":
 					sendMensage();
 					break;
@@ -130,31 +131,12 @@ public class Interface  {
 		}
 	}
 
-	private void seeMensage(){
-		System.out.println("Auction ID:");
-		int id = Integer.parseInt(reader.nextLine());
-
-		ArrayList<String> mensages = bd.mensagesAuction(id);
-
-		if (mensages == null){
-			errorDB();
-			state = "USER_MENU";
-			return;
-		}
-
-		for (String mensage: mensages){
-			System.out.println(mensage);
-		}
-
-		state = "USER_MENU";
-		return;
-
-	}
-
 	private void sendMensage(){
 		String estado = "nao visto";
 		System.out.println("Auction ID: ");
 		int id = Integer.parseInt(reader.nextLine());
+		//System.out.println("Notification ID:");
+		//int id_notif = Integer.parseInt(reader.nextLine());
 		System.out.println("Write your message:");
 		String message = reader.nextLine();
 
@@ -163,7 +145,7 @@ public class Interface  {
 		//insert message on notificacoes table
 		bd.createNotification(id, this.user, estado);
 		//insert message on notif_msg table
-		//bd.createNotifMessage(this.user, message);
+		bd.createNotifMessage(this.user, message);
 		state = "USER_MENU";
 	}
 
@@ -231,7 +213,7 @@ public class Interface  {
 	
 	private void getAuctionMenu() {
 		System.out.println("Auction id:");
-		String id = reader.nextLine();
+		int id = Integer.parseInt(reader.nextLine());
 		
 		String auction = bd.getAuctionDetails(id);
 		System.out.println(auction);
@@ -241,19 +223,24 @@ public class Interface  {
 	}
 	
 	private void auctionMenu() {
+		String estado = "nao visto";
 		System.out.println("1-Make a bid");
 		System.out.println("0-Exit auction");
 		
 		while(true) {
 			int option = Integer.parseInt(reader.nextLine());
 			if(option == 1) {
+				System.out.println("Introduce auction id:");
+				int id = Integer.parseInt(reader.nextLine());
 				System.out.println("How much do you want to ask for?");
 				float bid = Float.parseFloat(reader.nextLine());
 				bd.createBid(auction, user, bid);
+				bd.createNotification(id, this.user, estado);
+				bd.createNotifAuction(user, bid);
 				break;
 			}
 			else if(option == 0) {
-				auction = null;
+				auction = 0;
 				state = "USER_MENU";
 				break;
 			}
@@ -309,7 +296,7 @@ public class Interface  {
 	
 	private void logOut() {
 		this.user = null;
-		this.auction = null;
+		this.auction = 0;
 		onlineThread.interrupt();
 		messageThread.interrupt();
 	}
