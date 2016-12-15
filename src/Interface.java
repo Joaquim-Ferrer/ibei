@@ -97,10 +97,20 @@ public class Interface  {
 		System.out.println("4-Send mensage to auction mural");
 		System.out.println("5-See auction messages");
 		System.out.println("6-Get auctions that I have activity in:");
-		
+
+		int option;
 		boolean badInput = true;
 		while(badInput) {
-			int option = Integer.parseInt(reader.nextLine());
+			try{
+
+				option = Integer.parseInt(reader.nextLine());
+
+			}catch(Exception e) {
+				errorInput();
+				state = "USER_MENU";
+				return;
+			}
+
 			switch(option) {
 				case 1:
 					badInput = false;
@@ -116,7 +126,7 @@ public class Interface  {
 					break;
 				case 4:
 					badInput = false;
-					this.state = "SEND_MENSAGE";
+					this.state = "SEND_MESSAGE";
 					break;
 				case 5:
 					badInput = false;
@@ -131,17 +141,27 @@ public class Interface  {
 					this.state = "INITIAL";
 					break;
 				default:
+					badInput = false;
 					errorInput();
+					this.state = "USER_MENU";
+					break;
 			}
+
 		}
 	}
 
 	private void sendMensage(){
 		String estado = "nao visto";
 		System.out.println("Auction ID: ");
-		int id = Integer.parseInt(reader.nextLine());
-		//System.out.println("Notification ID:");
-		//int id_notif = Integer.parseInt(reader.nextLine());
+		int id;
+		try{
+			id = Integer.parseInt(reader.nextLine());
+		} catch (Exception e){
+			errorInput();
+			this.state = "USER_MENU";
+			return;
+		}
+
 		System.out.println("Write your message:");
 		String message = reader.nextLine();
 
@@ -169,7 +189,16 @@ public class Interface  {
 		System.out.println("Description:");
 		String description = reader.nextLine();
 		System.out.println("Maximum price:");
-		float price = Float.parseFloat(reader.nextLine());
+		float price;
+		try {
+			price = Float.parseFloat(reader.nextLine());
+		}
+		catch(Exception e) {
+			errorInput();
+			state = "USER_MENU";
+			return;
+		}
+
 		System.out.println("Deadline (yyyy-MM-dd hh:mm:ss):");
 		String deadline = reader.nextLine();
 		
@@ -180,7 +209,7 @@ public class Interface  {
 			deadlineDate = format.parse(deadline);
 		}
 		catch(ParseException e) {
-			System.out.println("Bad date input");
+			errorInput();
 			state = "USER_MENU";
 			return;
 		}
@@ -218,7 +247,15 @@ public class Interface  {
 	
 	private void getAuctionMenu() {
 		System.out.println("Auction id:");
-		int id = Integer.parseInt(reader.nextLine());
+		int id;
+		try{
+			id = Integer.parseInt(reader.nextLine());
+		}catch(Exception e){
+			errorInput();
+			this.state = "USER_MENU";
+			return;
+		}
+
 		
 		String auction = bd.getAuctionDetails(id);
 		System.out.println(auction);
@@ -234,19 +271,39 @@ public class Interface  {
 		System.out.println("0-Exit auction");
 		
 		while(true) {
-			int option = Integer.parseInt(reader.nextLine());
+			int option;
+
+			try{
+				option = Integer.parseInt(reader.nextLine());
+			}catch(Exception e){
+				errorInput();
+				this.state = "USER_MENU";
+				return;
+			}
+
 			if(option == 1) {
 				System.out.println("Introduce auction id:");
-				int id = Integer.parseInt(reader.nextLine());
+
+				int id;
+				try{
+					id = Integer.parseInt(reader.nextLine());
+				}catch(Exception e){
+					errorInput();
+					this.state = "USER_MENU";
+					return;
+				}
 				System.out.println("How much do you want to ask for?");
-				float bid = Float.parseFloat(reader.nextLine());
+				float bid;
+				try{
+					bid = Float.parseFloat(reader.nextLine());
+				}catch(Exception e){
+					errorInput();
+					this.state = "USER_MENU";
+					return;
+				}
 				bd.createBid(auction, user, bid);
 				bd.createNotification(id, this.user, estado);
 				bd.createNotifAuction(user, bid);
-				break;
-			}
-			if(option == 2) {
-				editAuction();
 				break;
 			}
 			if(option == 2) {
@@ -260,6 +317,8 @@ public class Interface  {
 			}
 			else {
 				errorInput();
+				state = "USER_MENU";
+				break;
 			}
 		}		
 	}
@@ -271,7 +330,15 @@ public class Interface  {
 		System.out.println("0-Exit");
 
 		while(true) {
-			int option = Integer.parseInt(reader.nextLine());
+
+			int option;
+			try{
+				option = Integer.parseInt(reader.nextLine());
+			}catch(Exception e){
+				errorInput();
+				this.state = "INITIAL";
+				return;
+			}
 
 			if(option == 1) {
 				state = "REGISTER";
@@ -291,6 +358,8 @@ public class Interface  {
 			}
 			else {
 				errorInput();
+				this.state = "INITIAL";
+				break;
 			}
 
 		}
