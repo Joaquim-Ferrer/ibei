@@ -17,7 +17,7 @@ public class OnlineThread extends Thread {
     public void run() {
         try {
             while(true) {
-                bd.updateUserOnline(user);
+                //bd.updateUserOnline(user);
                 Thread.sleep(this.seconds * 1000);
             }
         } catch (InterruptedException e) {

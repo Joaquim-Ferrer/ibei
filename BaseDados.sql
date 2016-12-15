@@ -3,7 +3,8 @@ CREATE TABLE utilizador(
 		CONSTRAINT userMinLen CHECK(LENGTH(username) > 5)
 		CONSTRAINT userUnique PRIMARY KEY,
 	password 	VARCHAR2(30) NOT NULL
-		CONSTRAINT passMinLen CHECK(LENGTH(password) > 5)
+		CONSTRAINT passMinLen CHECK(LENGTH(password) > 5),
+	lastOnline DATE DEFAULT SYSDATE NOT NULL
 );
 
 CREATE TABLE leilao(
@@ -19,6 +20,17 @@ CREATE TABLE leilao(
 	deadline 	DATE NOT NULL,
 	FOREIGN KEY(username) REFERENCES utilizador(username)
 )
+
+
+CREATE TABLE historial_leilao(
+  id_old NUMBER(6) NOT NULL
+    CONSTRAINT pk_histleilao PRIMARY KEY,
+	id_leilao	NUMBER(10,2) NOT NULL,
+	data	DATE NOT NULL,
+	titulo	VARCHAR(30) NOT NULL,
+	descricao VARCHAR(100) NOT NULL,
+	FOREIGN KEY(id_leilao) REFERENCES leilao(id_leilao)
+);
 
 CREATE SEQUENCE LEILAO_ID
 START WITH 1
@@ -50,7 +62,7 @@ BEGIN
 	IF highest_bid < :NEW.montante
 	THEN
 		RAISE_APPLICATION_ERROR(-20000, 'CANT BID HIGHER THAN LOWEST BID');
-	END IF
+	END IF;
 END custo_licitacao_constraint;
 /
 
@@ -64,6 +76,7 @@ CREATE TABLE mensagens(
 );
 
 create sequence notif_id start with 1 increment by 1 minvalue 1 maxvalue 100000;
+create sequence id_old start with 1 increment by 1 minvalue 1 maxvalue 100000;
 
 CREATE TABLE notificacao(
 	id_notif	NUMBER(6) NOT NULL,

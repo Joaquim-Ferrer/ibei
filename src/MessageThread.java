@@ -19,11 +19,11 @@ public class MessageThread extends Thread {
     public void run() {
         try {
             while (true) {
-                System.out.println("MESSAGES:");
-                System.out.println(bd.verifyNewMensage(user));
-                System.out.println("BID:");
-                System.out.println(bd.verifyNewBid(user));
-                bd.modifyState(user);
+                //System.out.println("MESSAGES:");
+                //System.out.println(bd.verifyNewMensage(user));
+                //System.out.println("BID:");
+                //System.out.println(bd.verifyNewBid(user));
+                //bd.modifyState(user);
                 Thread.sleep(this.seconds * 1000);
             }
         } catch (InterruptedException e) {

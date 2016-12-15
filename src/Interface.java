@@ -10,6 +10,7 @@ public class Interface  {
 	private Scanner reader;
 	private BDInterface bd;
 	private String user; //currently logged in user
+
 	private int auction; //
 	private final int secondsBetweenPings = 20;
 	private OnlineThread onlineThread;
@@ -77,8 +78,10 @@ public class Interface  {
 			this.state = "USER_MENU";
 			onlineThread = new OnlineThread(user, bd, secondsBetweenPings);
 			onlineThread.start();
+
 			messageThread = new MessageThread(user, bd, secondsBetweenPings);
 			messageThread.start();
+
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
 		}
 		else {
@@ -95,6 +98,8 @@ public class Interface  {
 		System.out.println("3-Access auction by its id");
 		System.out.println("4-Send mensage to auction mural");
 		System.out.println("5-See auction messages");
+		System.out.println("6-Get auctions that I have activity in:");
+
 		
 		boolean badInput = true;
 		while(badInput) {
@@ -119,6 +124,9 @@ public class Interface  {
 				case 5:
 					badInput = false;
 					this.state = "AUCTION_MENSAGES";
+					break;
+				case 6:
+					this.state = "GET_MY_ACTIVITIES_AUCTIONS";
 					break;
 				case 0:
 					badInput = false;
@@ -225,6 +233,7 @@ public class Interface  {
 	private void auctionMenu() {
 		String estado = "nao visto";
 		System.out.println("1-Make a bid");
+		System.out.println("2-Update auction");
 		System.out.println("0-Exit auction");
 		
 		while(true) {
@@ -239,6 +248,10 @@ public class Interface  {
 				bd.createNotifAuction(user, bid);
 				break;
 			}
+			if(option == 2) {
+				editAuction();
+				break;
+			}
 			else if(option == 0) {
 				auction = 0;
 				state = "USER_MENU";
@@ -247,8 +260,7 @@ public class Interface  {
 			else {
 				errorInput();
 			}
-		}
-			
+		}		
 	}
 
 	private void initialMenu() {
@@ -321,4 +333,47 @@ public class Interface  {
 		System.out.println(myActivitiesAuctions);
 		state = "USER_MENU";
 	}
+
+	private void editAuction() {
+		
+		System.out.println("New Title:<leave empty if you want to keep the same>");
+		String new_title = reader.nextLine();
+		System.out.println("New description:<leave empy if you want to keep the same>");
+		String new_description = reader.nextLine();
+
+		boolean success1 = true;
+		boolean success2 = true;
+		boolean commit = false;
+
+
+		if (!new_title.trim().equals("") && !new_description.trim().equals("")){
+			bd.selectOldAuction(auction, false);
+			System.out.println("ENTREI NO PRIMEIRO IF");
+			success1 = bd.updateAuctionTitle(user, new_title, this.auction, false);
+			success2 = bd.updateAuctionDescription(user, new_description, this.auction, false);
+		}
+		else if(!new_title.trim().equals("")) {
+			System.out.println("ENTREI NO SEGUNDO IF");
+			bd.selectOldAuction(auction, false);
+			success1 = bd.updateAuctionTitle(user, new_title, this.auction, false);
+		}
+		else if(!new_description.trim().equals("")) {
+			System.out.println("ENTREI NO TERCEIRO IF");
+			bd.selectOldAuction(auction, false);
+			success2 = bd.updateAuctionDescription(user, new_description, this.auction, false);
+		}
+
+		if(success1 && success2) {
+			bd.doCommit();
+		}
+		else{
+			bd.doRollback();
+		}
+
+
+		String auction = bd.getAuctionDetails(this.auction);
+		System.out.println(auction);
+		
+	}
+
 }

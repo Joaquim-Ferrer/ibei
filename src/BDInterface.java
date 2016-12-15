@@ -29,8 +29,7 @@ public class BDInterface{
 	}
 
 	public int createUser(String username, String password) {
-		String query = "INSERT INTO utilizador VALUES (?, ?)";
-		System.out.println(query);
+		String query = "INSERT INTO utilizador (username, password) VALUES (?, ?)";
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, username);
@@ -137,7 +136,7 @@ public class BDInterface{
 	}
 
 	public String getAuctionDetails(int id) {
-		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, TO_CHAR(deadline), NVL(MIN(montante), leilao.preco_maximo) preco_maximo " +
+		String query = "SELECT leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, deadline, NVL(MIN(montante), leilao.preco_maximo) preco_minimo " +
 				"FROM leilao, licitacao " +
 				"WHERE leilao.id_leilao = ? AND leilao.id_leilao = licitacao.id_leilao(+) " +
 				"GROUP BY leilao.id_leilao, leilao.username, cod_artigo, titulo, descricao, preco_maximo, deadline, preco_maximo";
@@ -145,7 +144,6 @@ public class BDInterface{
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setInt(1, id);
-			//stmt.setLong(2, id);
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
 				int id_leilao = rs.getInt("id_leilao");
@@ -154,12 +152,11 @@ public class BDInterface{
 				String titulo = rs.getString("titulo");
 				String descricao = rs.getString("descricao");
 				Float preco_maximo = rs.getFloat("preco_maximo");
-				String deadline = rs.getString("deadline");
-				float montante = rs.getFloat("montante");
-				//ArrayList<String> mensagem = mensagesAuction(id_leilao);
+				String deadline = (rs.getDate("deadline")).toString();
+				float montante = rs.getFloat("preco_minimo");
 				return "ID_LEILAO: " + id_leilao + "\nUSERNAME: " + username + "\nCOD_ARTIGO: " + cod_artigo + "\nTITULO: " + titulo + "\nDESCRICAO: "
 					+ descricao + "\nPRECO_MAXIMO: " + preco_maximo + "\nDEADLINE: " + deadline
-					+ "\n\n LAST BID: " + montante;
+					+ "\n\nLAST BID: " + montante;
 
 			}
 			return "";
@@ -398,6 +395,136 @@ public class BDInterface{
 			stmt.executeUpdate();
 			connection.commit();
 		} catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+
+	public boolean updateAuctionTitle(String user, String new_title, int id_leilao, boolean commit) {
+
+		String query = "DECLARE leilao_username VARCHAR(30);"
+				+ " BEGIN"
+				+ " SELECT username INTO leilao_username"
+				+ " FROM leilao"
+				+ " WHERE id_leilao = ?;"
+				+ " IF leilao_username = ?"
+				+ " THEN"
+				+ " UPDATE leilao"
+				+ " SET titulo = ?"
+				+ " WHERE id_leilao = ?;"
+				+ " ELSE RAISE_APPLICATION_ERROR(-20000, 'YOU HAVE NO POWER THERE');"
+				+ " END IF;"
+				+ " END;";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, id_leilao);
+			stmt.setString(2, user);
+			stmt.setString(3, new_title);
+			stmt.setInt(4, id_leilao);
+			stmt.execute();
+			if(commit) {
+				connection.commit();
+			}
+			return true;
+		}
+		catch(SQLException e) {
+			System.out.println(e.getMessage());
+			return false;
+		}
+	}
+	
+	public boolean updateAuctionDescription(String user, String new_description, int id_leilao, boolean commit) {
+
+		String query = "DECLARE leilao_username VARCHAR(30);"
+				+ " BEGIN"
+				+ " SELECT username INTO leilao_username"
+				+ " FROM leilao"
+				+ " WHERE id_leilao = ?;"
+				+ " IF leilao_username = ?"
+				+ " THEN"
+				+ " UPDATE leilao"
+				+ " SET descricao = ?"
+				+ " WHERE id_leilao = ?;"
+				+ " ELSE RAISE_APPLICATION_ERROR(-20000, 'YOU HAVE NO POWER THERE');"
+				+ " END IF;"
+				+ " END;";
+		
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, id_leilao);
+			stmt.setString(2, user);
+			stmt.setString(3, new_description);
+			stmt.setInt(4, id_leilao);
+			stmt.execute();
+			if(commit) {
+				connection.commit();
+			}
+			return true;
+
+		}
+		catch(SQLException e) {
+			System.out.println(e.getMessage());
+			try{
+				connection.rollback();
+			}catch (SQLException e1) {
+				System.out.println(e1.getMessage());
+			}
+			return false;
+		}
+
+	}
+
+	public void insertOldAuction(int id_leilao, String titulo, String descricao, boolean commit){
+		String query = "INSERT INTO historial_leilao (id_leilao, data, titulo, descricao) VALUES (?, SYSDATE, ?, ?)";
+
+		try (PreparedStatement stmt = connection.prepareStatement(query)){
+			stmt.setInt(1, id_leilao);
+			stmt.setString(2, titulo);
+			stmt.setString(3, descricao);
+			stmt.executeUpdate();
+			if(commit) {
+				connection.commit();
+			}
+			System.out.println("Insertion successful");
+			return;
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public void selectOldAuction(int id_leilao, boolean commit){
+		String modify = "SELECT id_leilao, titulo, descricao " +
+				"FROM leilao " +
+				"WHERE id_leilao = ?";
+
+
+		try (PreparedStatement stmt = connection.prepareStatement(modify)){
+			stmt.setInt(1, id_leilao);
+			ResultSet rs = stmt.executeQuery();
+
+			while(rs.next()){
+				int id_leilao_aux = rs.getInt("id_leilao");
+				String titulo = rs.getString("titulo");
+				String descricao = rs.getString("descricao");
+				insertOldAuction(id_leilao_aux, titulo, descricao, commit);
+			}
+
+		}catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public void doCommit(){
+		try {
+			connection.commit();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	public void doRollback() {
+		try {
+			connection.rollback();
+		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
 	}
