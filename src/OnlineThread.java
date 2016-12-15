@@ -1,4 +1,3 @@
-
 public class OnlineThread extends Thread {
 	
 	private String user;
@@ -23,3 +22,4 @@ public class OnlineThread extends Thread {
 	
 	}	
 }
+
