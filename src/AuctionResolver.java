@@ -12,16 +12,22 @@ public class AuctionResolver extends Thread{
 	public void run() {
 		try {
 			ArrayList<Integer> ids = new ArrayList<Integer>();
+			ArrayList<String> users = new ArrayList<String>();
 			while(true) {
-				ids = bd.resolveAuctions();
-				Thread.sleep(this.seconds * 1000);
-				for(int auction_id : ids) {
-					
+				ids.clear();
+				users.clear();
+				bd.getUnresolvedAuctions(ids, users);
+				if(ids.size() > 0){	
+					for(int i = 0; i < ids.size(); i++) {
+						bd.createNotifMessage(ids.get(i), users.get(i), "admin", "Your auction is finished!"
+								+ "You can go check how much you'll have to pay in the auction page!");
+					}
+					bd.resolveAuctions();
 				}
+				Thread.sleep(this.seconds * 1000);
 			}
 		} catch (InterruptedException e) {
 			
 		}
 	}
-	
 }

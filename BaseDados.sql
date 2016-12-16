@@ -102,3 +102,19 @@ BEGIN
   END IF;
 END custo_licitacao_constraint;
 /
+
+CREATE OR REPLACE TRIGGER old_auction_constraint
+  BEFORE INSERT ON licitacao
+  FOR EACH ROW
+DECLARE
+  data_limite DATE;
+BEGIN
+  SELECT deadline
+  INTO data_limite
+  FROM leilao
+  WHERE :NEW.id_leilao = leilao.id_leilao;
+  IF data_limite < :NEW.data THEN
+    RAISE_APPLICATION_ERROR(-20000, 'CANT BID ON OLD AUCTION');
+END IF;
+END old_auction_constraint;
+/

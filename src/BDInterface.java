@@ -553,24 +553,39 @@ public class BDInterface{
 		}
 	}
 
-	public ArrayList<Integer> resolveAuctions() {
-		String query = "SELECT id_leilao"
+	public void getUnresolvedAuctions(ArrayList<Integer> ids, ArrayList<String> users) {
+		String query = "SELECT id_leilao, username"
 				+ " FROM leilao"
 				+ " WHERE deadline < SYSDATE"
 				+ " AND estado_resolvido = 0";
 		
-		ArrayList<Integer> ids = new ArrayList<Integer>();
 		try(PreparedStatement stmt = connection.prepareStatement(query)) {
 			ResultSet rs = stmt.executeQuery();
 			while(rs.next()) {
 				Integer i = rs.getInt("id_leilao");
+				String user = rs.getString("username");
 				ids.add(i);
+				users.add(user);
 			}
 		}
 		catch(SQLException e) {
 			System.out.println(e.getMessage());
 		}
-		return ids;
+	}
+
+	public void resolveAuctions() {
+		String query = "UPDATE leilao"
+				+ " SET estado_resolvido = 1"
+				+ " WHERE deadline < SYSDATE"
+				+ " AND estado_resolvido = 0";
+		
+		try(PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.executeUpdate();
+			connection.commit();
+		}
+		catch(SQLException e) {
+			System.out.println(e.getMessage());
+		}
 	}
 
 }
