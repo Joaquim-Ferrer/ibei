@@ -51,9 +51,6 @@ public class Interface  {
 				case "AUCTION_MENU":
 					auctionMenu();
 					break;
-				case "SEND_MENSAGE":
-					sendMensage();
-					break;
 				case "GET_MY_ACTIVITIES_AUCTIONS":
 					getMyActivitiesAuctions();
 					break;
@@ -79,7 +76,6 @@ public class Interface  {
 			onlineThread.start();
 			messageThread = new MessageThread(user, bd, secondsBetweenPings);
 			messageThread.start();
-
 			System.out.println("Welcome to the most beautiful reversed auctions app ever!");
 		}
 		else {
@@ -88,91 +84,64 @@ public class Interface  {
 		}
 	}
 
-	
 	private void userMenu() {
 		System.out.println("0-Log out");
 		System.out.println("1-Create Auction");
 		System.out.println("2-Search for auctions by its code EAN");
 		System.out.println("3-Access auction by its id");
-		System.out.println("4-Send mensage to auction mural");
-		System.out.println("5-See auction messages");
-		System.out.println("6-Get auctions that I have activity in:");
+		System.out.println("4-Get auctions that I have activity in:");
 
 		int option;
-		boolean badInput = true;
-		while(badInput) {
-			try{
-
-				option = Integer.parseInt(reader.nextLine());
-
-			}catch(Exception e) {
-				errorInput();
-				state = "USER_MENU";
-				return;
-			}
-
-			switch(option) {
-				case 1:
-					badInput = false;
-					this.state = "REGISTER_AUCTION";
-					break;
-				case 2:
-					badInput = false;
-					this.state = "SEARCH_AUCTIONS";
-					break;
-				case 3:
-					badInput = false;
-					this.state = "GET_AUCTION";
-					break;
-				case 4:
-					badInput = false;
-					this.state = "SEND_MESSAGE";
-					break;
-				case 5:
-					badInput = false;
-					this.state = "AUCTION_MENSAGES";
-					break;
-				case 6:
-					this.state = "GET_MY_ACTIVITIES_AUCTIONS";
-					break;
-				case 0:
-					badInput = false;
-					logOut();
-					this.state = "INITIAL";
-					break;
-				default:
-					badInput = false;
-					errorInput();
-					this.state = "USER_MENU";
-					break;
-			}
-
-		}
-	}
-
-	private void sendMensage(){
-		String estado = "nao visto";
-		System.out.println("Auction ID: ");
-		int id;
 		try{
-			id = Integer.parseInt(reader.nextLine());
-		} catch (Exception e){
+
+			option = Integer.parseInt(reader.nextLine());
+
+		}catch(Exception e) {
 			errorInput();
-			this.state = "USER_MENU";
+			state = "USER_MENU";
 			return;
 		}
 
-		System.out.println("Write your message:");
-		String message = reader.nextLine();
+		switch(option) {
+			case 1:
+				this.state = "REGISTER_AUCTION";
+				break;
+			case 2:
+				this.state = "SEARCH_AUCTIONS";
+				break;
+			case 3:
+				this.state = "GET_AUCTION";
+				break;
+			case 4:
+				this.state = "GET_MY_ACTIVITIES_AUCTIONS";
+				break;
+			case 0:
+				logOut();
+				this.state = "INITIAL";
+				break;
+			default:
+				errorInput();
+				this.state = "USER_MENU";
+				break;
+		}
 
-		//insert message on mensagens table
-		bd.sendMessage(id, this.user, message);
-		//insert message on notificacoes table
-		bd.createNotification(id, this.user, estado);
-		//insert message on notif_msg table
-		bd.createNotifMessage(this.user, message);
-		state = "USER_MENU";
 	}
+
+	private void sendMessage() {
+        System.out.println("Write your message:");
+        String message = reader.nextLine();
+        bd.sendMessage(auction, this.user, message);
+        insertMessageNotification(message);
+    }
+	
+    private void insertMessageNotification(String message) {
+        ArrayList<String> usersThatMessaged = bd.getMessagers(auction);
+        for(String u : usersThatMessaged) {
+            if(!u.equals(user)) {
+                bd.createNotifMessage(auction, u, user, message);
+            }
+        }
+    }
 
 	private void registerAuctionMenu() {
 		System.out.println("Product Code:");
@@ -232,12 +201,9 @@ public class Interface  {
 		}
 		
 		ArrayList<String> auctions = bd.searchAuctionsByCode(code);
-		if(auctions == null) {
-			errorDB();
-			state = "USER_MENU";
-			return;
+		if(auctions.isEmpty()) {
+			System.out.println("There are no auctions with that code. But come back tomorrow! Hundreds of people are joining everyday!");
 		}
-		
 		for(String auction : auctions) {
 			System.out.println(auction);
 		}
@@ -255,72 +221,88 @@ public class Interface  {
 			this.state = "USER_MENU";
 			return;
 		}
-
-		
 		String auction = bd.getAuctionDetails(id);
+		if(auction == "") {
+			System.out.println("There's no such auction");
+			this.state = "USER_MENU";
+			return;
+		}
 		System.out.println(auction);
 		
 		this.auction = id;
 		state = "AUCTION_MENU";
 	}
 	
+    private float makeBid() throws NumberFormatException {
+        System.out.println("How much do you want to ask for?");
+        float bid = Float.parseFloat(reader.nextLine());
+        if(bd.createBid(auction, user, bid)) {
+            return bid;
+        }
+        return -1;
+    }
+    
+    private void insertBidNotifications(float bid) {
+        ArrayList<String> usersThatBidded = bd.getBidders(auction);
+        for(String u : usersThatBidded) {
+            if(!u.equals(user)) {
+                bd.createNotifAuction(auction, u, bid);
+            }
+        }
+    }
+	
 	private void auctionMenu() {
-		String estado = "nao visto";
 		System.out.println("1-Make a bid");
 		System.out.println("2-Update auction");
+		System.out.println("3-See messages on the auction wall");
+		System.out.println("4-Send message to auction wall");
 		System.out.println("0-Exit auction");
 		
-		while(true) {
-			int option;
-
+		int option;
+		try{
+			option = Integer.parseInt(reader.nextLine());
+		}catch(Exception e){
+			errorInput();
+			this.state = "USER_MENU";
+			this.auction = 0;
+			return;
+		}
+		
+		if(option == 1) {
+			float bid;
 			try{
-				option = Integer.parseInt(reader.nextLine());
+				bid = makeBid();
 			}catch(Exception e){
 				errorInput();
 				this.state = "USER_MENU";
+				this.auction = 0;
 				return;
 			}
-
-			if(option == 1) {
-				System.out.println("Introduce auction id:");
-
-				int id;
-				try{
-					id = Integer.parseInt(reader.nextLine());
-				}catch(Exception e){
-					errorInput();
-					this.state = "USER_MENU";
-					return;
-				}
-				System.out.println("How much do you want to ask for?");
-				float bid;
-				try{
-					bid = Float.parseFloat(reader.nextLine());
-				}catch(Exception e){
-					errorInput();
-					this.state = "USER_MENU";
-					return;
-				}
-				bd.createBid(auction, user, bid);
-				bd.createNotification(id, this.user, estado);
-				bd.createNotifAuction(user, bid);
-				break;
+			if(bid != -1) {
+				insertBidNotifications(bid);
 			}
-			if(option == 2) {
-				editAuction();
-				break;
+		}
+		else if(option == 2) {
+			editAuction();
+		}
+		else if(option == 3) {
+			ArrayList<String> messages = bd.getAuctionMessages(auction);
+			for(String m : messages) {
+				System.out.println(m);
+				
 			}
-			else if(option == 0) {
-				auction = 0;
-				state = "USER_MENU";
-				break;
-			}
-			else {
-				errorInput();
-				state = "USER_MENU";
-				break;
-			}
-		}		
+		}
+		else if(option == 4) {
+			sendMessage();
+		}
+		else if(option == 0) {
+			auction = 0;
+			state = "USER_MENU";
+		}
+		else {
+			errorInput();
+			state = "USER_MENU";
+		}	
 	}
 
 	private void initialMenu() {
@@ -381,18 +363,14 @@ public class Interface  {
 		this.auction = 0;
 		onlineThread.interrupt();
 		messageThread.interrupt();
+		onlineThread = null;
+		messageThread = null;
 	}
 	
 	private void errorInput() {
 		System.out.println("Option not allowed");
 	}
 	
-	private void errorDB() {
-		System.out.println("Database couldn't be reached. Try again later. You'll"
-				+ "get by mail a free 0.01c coupon to use whenever you want for "
-				+ "your trouble. Thank you!");
-	}
-
 	private void getOnlineUsers() {
 		String onlineUsers = bd.getOnlineUsers();
 		System.out.println(onlineUsers);
@@ -413,22 +391,18 @@ public class Interface  {
 
 		boolean success1 = true;
 		boolean success2 = true;
-		boolean commit = false;
 
 
 		if (!new_title.trim().equals("") && !new_description.trim().equals("")){
 			bd.selectOldAuction(auction, false);
-			System.out.println("ENTREI NO PRIMEIRO IF");
 			success1 = bd.updateAuctionTitle(user, new_title, this.auction, false);
 			success2 = bd.updateAuctionDescription(user, new_description, this.auction, false);
 		}
 		else if(!new_title.trim().equals("")) {
-			System.out.println("ENTREI NO SEGUNDO IF");
 			bd.selectOldAuction(auction, false);
 			success1 = bd.updateAuctionTitle(user, new_title, this.auction, false);
 		}
 		else if(!new_description.trim().equals("")) {
-			System.out.println("ENTREI NO TERCEIRO IF");
 			bd.selectOldAuction(auction, false);
 			success2 = bd.updateAuctionDescription(user, new_description, this.auction, false);
 		}

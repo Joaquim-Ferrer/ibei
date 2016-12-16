@@ -9,7 +9,9 @@ public class MessageThread extends Thread {
     private String user;
     private int seconds = 10; //Time between accesses to database
     private BDInterface bd;
-
+    private final String msgGreetingText = "DLING DLING DLING NEW MESSAGE!!!\n";
+    private final String bidGreetingText = "DLING DLING DLING NEW BID!!!\n";
+    
     public MessageThread(String user, BDInterface bd, int seconds) {
         this.user = user;
         this.bd = bd;
@@ -19,11 +21,16 @@ public class MessageThread extends Thread {
     public void run() {
         try {
             while (true) {
-                //System.out.println("MESSAGES:");
-                //System.out.println(bd.verifyNewMensage(user));
-                //System.out.println("BID:");
-                //System.out.println(bd.verifyNewBid(user));
-                //bd.modifyState(user);
+                ArrayList<String> messages = bd.verifyNewMessages(user);
+                for(String m : messages) {
+                    System.out.println(this.msgGreetingText + m + "\n");
+                }
+                ArrayList<String> bids = bd.verifyNewBids(user);
+                for(String b : bids) {
+                    System.out.println(this.bidGreetingText + b + "\n");
+                }
+          
+                bd.modifyNotifsState(user);
                 Thread.sleep(this.seconds * 1000);
             }
         } catch (InterruptedException e) {

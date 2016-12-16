@@ -8,6 +8,7 @@ public class Client {
 		try {
 
 			BDInterface bd = new BDInterface();
+			
 			Interface i = new Interface(bd);
 
 
